@@ -1,9 +1,7 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const axios = require('axios');
 
-const TOKEN = process.env.DISCORD_TOKEN;
-client.login(TOKEN);
-
+const TOKEN = process.env.DISCORD_TOKEN; // Načtení tokenu z Railway Variables
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
@@ -40,4 +38,5 @@ client.once('ready', () => {
     setInterval(updateCryptoPrices, 60000);
 });
 
+// 🔹 Přihlášení bota až na konec!
 client.login(TOKEN);

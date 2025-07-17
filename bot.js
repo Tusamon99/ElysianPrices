@@ -74,7 +74,7 @@ client.once('ready', () => {
   updateCryptoPrices();
   
   // Aktualizace každých 60 sekund
-  setInterval(updateCryptoPrices, 60000);
+  setInterval(updateCryptoPrices, 265000);
 });
 
 // Spuštění bota

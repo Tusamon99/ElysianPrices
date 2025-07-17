@@ -1,5 +1,6 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const axios = require('axios');
+require('dotenv').config(); // Načtení proměnných prostředí
 
 const TOKEN = process.env.DISCORD_TOKEN;
 
@@ -13,19 +14,25 @@ const client = new Client({
 async function updateCryptoPrices() {
   try {
     const response = await axios.get(
-      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd'
+      'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC,ETH,SOL&convert=USD',
+      {
+        headers: {
+          'X-CMC_PRO_API_KEY': process.env.COINMARKETCAP_API_KEY,
+          'Accept': 'application/json'
+        }
+      }
     );
-    const data = response.data;
+    const data = response.data.data;
 
     // Kontrola, jestli API vrací platná data
-    if (!data.bitcoin || !data.ethereum || !data.solana) {
+    if (!data.BTC || !data.ETH || !data.SOL) {
       console.log("API nevrátilo platná data:", data);
       return;
     }
 
-    const btcPrice = Math.round(data.bitcoin.usd);
-    const ethPrice = Math.round(data.ethereum.usd);
-    const solPrice = Math.round(data.solana.usd);
+    const btcPrice = Math.round(data.BTC.quote.USD.price);
+    const ethPrice = Math.round(data.ETH.quote.USD.price);
+    const solPrice = Math.round(data.SOL.quote.USD.price);
 
     // Custom Status
     const status = `$${btcPrice} | $${ethPrice} | $${solPrice}`;
@@ -37,7 +44,11 @@ async function updateCryptoPrices() {
     });
 
   } catch (error) {
-    console.error('Chyba při načítání cen:', error.message);
+    console.error('Chyba při načítání cen:', error.response?.data || error.message);
+    if (error.response && error.response.status === 429) {
+      console.log('Limit API překročen, čekám 2 minuty...');
+      await new Promise(resolve => setTimeout(resolve, 120000));
+    }
   }
 }
 

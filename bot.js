@@ -1,4 +1,6 @@
-require('dotenv').config(); // Načtení proměnných prostředí
+require('dotenv').config();
+console.log('Načtený DISCORD_TOKEN:', process.env.DISCORD_TOKEN);
+console.log('Obsah procesu env:', process.env);
 const { Client, GatewayIntentBits } = require('discord.js');
 const axios = require('axios');
 
@@ -13,23 +15,17 @@ const client = new Client({
  */
 async function updateCryptoPrices() {
   try {
-    const response = await axios.get('https://api.binance.com/api/v3/ticker/price', {
-      params: {
-        symbol: 'BTCUSDT,ETHUSDT,SOLUSDT' // Symboly pro BTC, ETH a SOL
-      }
-    });
-    const data = response.data;
+    console.log('Počáteční pokus o aktualizaci cen...');
+    // Získání cen pro jednotlivé symboly
+    const [btcResponse, ethResponse, solResponse] = await Promise.all([
+      axios.get('https://api.binance.com/api/v3/ticker/price', { params: { symbol: 'BTCUSDT' } }),
+      axios.get('https://api.binance.com/api/v3/ticker/price', { params: { symbol: 'ETHUSDT' } }),
+      axios.get('https://api.binance.com/api/v3/ticker/price', { params: { symbol: 'SOLUSDT' } }),
+    ]);
 
-    // Kontrola, jestli API vrací platná data
-    if (!Array.isArray(data) || data.length !== 3) {
-      console.log("API nevrátilo platná data:", data);
-      return;
-    }
-
-    // Extrahování cen (zaokrouhlení na celá čísla)
-    const btcPrice = Math.round(data.find(item => item.symbol === 'BTCUSDT').price);
-    const ethPrice = Math.round(data.find(item => item.symbol === 'ETHUSDT').price);
-    const solPrice = Math.round(data.find(item => item.symbol === 'SOLUSDT').price);
+    const btcPrice = Math.round(btcResponse.data.price);
+    const ethPrice = Math.round(ethResponse.data.price);
+    const solPrice = Math.round(solResponse.data.price);
 
     // Custom Status
     const status = `$${btcPrice} | $${ethPrice} | $${solPrice}`;

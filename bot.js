@@ -1,6 +1,6 @@
+require('dotenv').config(); // Načtení proměnných prostředí
 const { Client, GatewayIntentBits } = require('discord.js');
 const axios = require('axios');
-require('dotenv').config(); // Načtení proměnných prostředí
 
 const TOKEN = process.env.DISCORD_TOKEN;
 
@@ -9,30 +9,27 @@ const client = new Client({
 });
 
 /**
- * Funkce pro aktualizaci cen kryptoměn a nastavení statusu
+ * Funkce pro aktualizaci cen kryptoměn z Binance API a nastavení statusu
  */
 async function updateCryptoPrices() {
   try {
-    const response = await axios.get(
-      'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC,ETH,SOL&convert=USD',
-      {
-        headers: {
-          'X-CMC_PRO_API_KEY': process.env.COINMARKETCAP_API_KEY,
-          'Accept': 'application/json'
-        }
+    const response = await axios.get('https://api.binance.com/api/v3/ticker/price', {
+      params: {
+        symbol: 'BTCUSDT,ETHUSDT,SOLUSDT' // Symboly pro BTC, ETH a SOL
       }
-    );
-    const data = response.data.data;
+    });
+    const data = response.data;
 
     // Kontrola, jestli API vrací platná data
-    if (!data.BTC || !data.ETH || !data.SOL) {
+    if (!Array.isArray(data) || data.length !== 3) {
       console.log("API nevrátilo platná data:", data);
       return;
     }
 
-    const btcPrice = Math.round(data.BTC.quote.USD.price);
-    const ethPrice = Math.round(data.ETH.quote.USD.price);
-    const solPrice = Math.round(data.SOL.quote.USD.price);
+    // Extrahování cen (zaokrouhlení na celá čísla)
+    const btcPrice = Math.round(data.find(item => item.symbol === 'BTCUSDT').price);
+    const ethPrice = Math.round(data.find(item => item.symbol === 'ETHUSDT').price);
+    const solPrice = Math.round(data.find(item => item.symbol === 'SOLUSDT').price);
 
     // Custom Status
     const status = `$${btcPrice} | $${ethPrice} | $${solPrice}`;
@@ -46,8 +43,8 @@ async function updateCryptoPrices() {
   } catch (error) {
     console.error('Chyba při načítání cen:', error.response?.data || error.message);
     if (error.response && error.response.status === 429) {
-      console.log('Limit API překročen, čekám 2 minuty...');
-      await new Promise(resolve => setTimeout(resolve, 120000));
+      console.log('Limit API překročen, čekám 1 minutu...');
+      await new Promise(resolve => setTimeout(resolve, 60000));
     }
   }
 }
@@ -73,8 +70,8 @@ client.once('ready', () => {
   // Okamžitá aktualizace statusu
   updateCryptoPrices();
   
-  // Aktualizace každých 60 sekund
-  setInterval(updateCryptoPrices, 265000);
+  // Aktualizace každých 60 sekund (1 minuta)
+  setInterval(updateCryptoPrices, 60000);
 });
 
 // Spuštění bota

@@ -70,5 +70,6 @@ client.once('ready', () => {
   setInterval(updateCryptoPrices, 60000);
 });
 
+// Přidáno pro vynucení nového deployu
 // Spuštění bota
 startBot();

@@ -1,10 +1,16 @@
-require('dotenv').config();
+require('dotenv').config({ override: true });
 console.log('Načtený DISCORD_TOKEN:', process.env.DISCORD_TOKEN);
+console.log('Cesta k .env:', __dirname);
 console.log('Obsah procesu env:', process.env);
 const { Client, GatewayIntentBits } = require('discord.js');
 const axios = require('axios');
 
 const TOKEN = process.env.DISCORD_TOKEN;
+
+if (!TOKEN) {
+  console.error('Chyba: DISCORD_TOKEN není definován. Zkontrolujte .env nebo Variables na Railway.');
+  process.exit(1);
+}
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
@@ -16,7 +22,6 @@ const client = new Client({
 async function updateCryptoPrices() {
   try {
     console.log('Počáteční pokus o aktualizaci cen...');
-    // Získání cen pro jednotlivé symboly
     const [btcResponse, ethResponse, solResponse] = await Promise.all([
       axios.get('https://api.binance.com/api/v3/ticker/price', { params: { symbol: 'BTCUSDT' } }),
       axios.get('https://api.binance.com/api/v3/ticker/price', { params: { symbol: 'ETHUSDT' } }),
@@ -27,12 +32,11 @@ async function updateCryptoPrices() {
     const ethPrice = Math.round(ethResponse.data.price);
     const solPrice = Math.round(solResponse.data.price);
 
-    // Custom Status
     const status = `$${btcPrice} | $${ethPrice} | $${solPrice}`;
     console.log('Aktualizuji status:', status);
 
     client.user.setPresence({
-      activities: [{ name: status, type: 4 }], // Typ 4 = Custom Status
+      activities: [{ name: status, type: 4 }],
       status: 'online',
     });
 
@@ -55,21 +59,15 @@ async function startBot() {
   } catch (error) {
     console.error("Bot se zhroutil:", error.message);
     console.log("Restartuji bota za 5 sekund...");
-    setTimeout(startBot, 5000); // Restart za 5 sekund
+    setTimeout(startBot, 5000);
   }
 }
 
 // Event - Bot je připraven
 client.once('ready', () => {
   console.log('Bot je připraven!');
-
-  // Okamžitá aktualizace statusu
   updateCryptoPrices();
-  
-  // Aktualizace každých 60 sekund (1 minuta)
   setInterval(updateCryptoPrices, 60000);
 });
-
-// Přidáno pro vynucení nového deployu
 // Spuštění bota
 startBot();

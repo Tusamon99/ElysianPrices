@@ -1,16 +1,22 @@
 require('dotenv').config({ override: true });
-console.log('Načtený DISCORD_TOKEN:', process.env.DISCORD_TOKEN);
-console.log('Cesta k .env:', __dirname);
-console.log('Obsah procesu env:', process.env);
-const { Client, GatewayIntentBits } = require('discord.js');
-const axios = require('axios');
+let DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 
-const TOKEN = process.env.DISCORD_TOKEN;
+// Ošetření případné předpony z .env nebo špatného nastavení
+if (DISCORD_TOKEN && DISCORD_TOKEN.includes('=')) {
+  DISCORD_TOKEN = DISCORD_TOKEN.split('=')[1];
+  console.log('Opravený DISCORD_TOKEN po odstranění předpony:', DISCORD_TOKEN);
+}
+console.log('Načtený DISCORD_TOKEN:', DISCORD_TOKEN);
+console.log('Délka tokenu:', DISCORD_TOKEN?.length);
+console.log('Celé prostředí:', JSON.stringify(process.env, null, 2));
 
-if (!TOKEN) {
-  console.error('Chyba: DISCORD_TOKEN není definován. Zkontrolujte .env nebo Variables na Railway.');
+if (!DISCORD_TOKEN) {
+  console.error('Chyba: DISCORD_TOKEN není definován.');
   process.exit(1);
 }
+
+const { Client, GatewayIntentBits } = require('discord.js');
+const axios = require('axios');
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds],
@@ -55,7 +61,7 @@ async function updateCryptoPrices() {
 async function startBot() {
   try {
     console.log("Přihlašuji bota...");
-    await client.login(TOKEN);
+    await client.login(DISCORD_TOKEN);
   } catch (error) {
     console.error("Bot se zhroutil:", error.message);
     console.log("Restartuji bota za 5 sekund...");
@@ -69,5 +75,6 @@ client.once('ready', () => {
   updateCryptoPrices();
   setInterval(updateCryptoPrices, 60000);
 });
-// Spuštění bota
+
+// Přidáno pro vynucení nového deployu
 startBot();
